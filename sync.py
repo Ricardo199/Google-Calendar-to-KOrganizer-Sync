@@ -1,3 +1,9 @@
+"""Google Calendar to KOrganizer Sync Utility
+
+This script fetches events from Google Calendar and creates an iCal file
+that can be imported into KOrganizer or other calendar applications.
+"""
+
 import datetime
 import os
 import zoneinfo
@@ -9,50 +15,85 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.errors import HttpError
 
+# Define the scope for Google Calendar API access (read-only)
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
 
 def main():
-    creds= None
+    """Main function to authenticate and sync calendar events."""
+    # Initialize credentials variable
+    creds = None
+    
+    # Check if we have saved credentials from a previous run
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    # If credentials don't exist or are invalid, get new ones
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
+            # Refresh expired credentials
             creds.refresh(Request())
         else:
+            # Run OAuth flow to get new credentials
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
             creds = flow.run_local_server(port=0)
+        
+        # Save credentials for future use
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
         
     try:
+        # Build the Google Calendar service
         service = build("calendar", "v3", credentials=creds)
+        
+        # Get current time in UTC for fetching upcoming events
         now = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        
         print('Getting all events from the calendar')
-        events_result=(
+        
+        # Fetch upcoming events from the primary calendar
+        events_result = (
             service.events().list(
-                calendarId="primary",
-                timeMin=now,
-                singleEvents=True,
-                orderBy="startTime"
+                calendarId="primary",      # Use the user's primary calendar
+                timeMin=now,               # Only get events from now onwards
+                singleEvents=True,         # Expand recurring events into individual instances
+                orderBy="startTime"        # Sort events by start time
             ).execute()
         )
+        
+        # Extract the events list from the API response
         events = events_result.get("items", [])
+        
+        # Create a new iCal calendar object
         cal = Calendar()
+        
+        # Process each event and add it to the iCal calendar
         for event in events:
+            # Create a new iCal event
             cal_event = Event()
+            
+            # Extract start and end times (handle both datetime and date-only events)
             start = event['start'].get('dateTime', event['start'].get('date'))
             end = event['end'].get('dateTime', event['end'].get('date'))
-            cal_event.add('summary', event.get('summary', 'No Title'))
-            cal_event.add('dtstart', datetime.datetime.fromisoformat(start).astimezone(zoneinfo.ZoneInfo("UTC")))
-            cal_event.add('dtend', datetime.datetime.fromisoformat(end).astimezone(zoneinfo.ZoneInfo("UTC")))
-            cal_event.add('description', event.get('description', ''))
-            cal_event.add('location', event.get('location', ''))
+            
+            # Add event properties to the iCal event
+            cal_event.add('summary', event.get('summary', 'No Title'))  # Event title
+            cal_event.add('dtstart', datetime.datetime.fromisoformat(start).astimezone(zoneinfo.ZoneInfo("UTC")))  # Start time
+            cal_event.add('dtend', datetime.datetime.fromisoformat(end).astimezone(zoneinfo.ZoneInfo("UTC")))      # End time
+            cal_event.add('description', event.get('description', ''))  # Event description
+            cal_event.add('location', event.get('location', ''))        # Event location
+            
+            # Add the event to the calendar
             cal.add_component(cal_event)
+        
+        # Write the iCal data to a file
         with open('calendar.ics', 'wb') as f:
             f.write(cal.to_ical())
+        
+        print(f"Successfully created calendar.ics with {len(events)} events")
+        
     except HttpError as error:
-        print(f"An error occurred: {error}")
+        print(f"An error occurred while accessing Google Calendar: {error}")
 
 if __name__ == '__main__':
     main()
