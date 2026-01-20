@@ -106,11 +106,9 @@ def main():
         
         # Open the iCal file with the default application
         try:
-            # Attempt to open the generated iCal file with the default application
-            os.startfile('calendar.ics')
-        except AttributeError:
-            # os.startfile is not available on non-Windows platforms
-            print("Please open 'calendar.ics' manually to import it into your calendar.")
+            os.system('xdg-open calendar.ics')  # For Linux
+        except Exception as e:
+            print(f"Could not open calendar.ics automatically: {e}")
         
     except HttpError as error:
         print(f"An error occurred while accessing Google Calendar: {error}")
