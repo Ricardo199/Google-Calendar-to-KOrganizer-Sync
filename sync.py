@@ -113,7 +113,10 @@ def main():
         except subprocess.CalledProcessError as e:
            print(f"Failed to open calendar.ics: {e}")
         except FileNotFoundError:
-           print("The xdg-open command is missing from this system.")
+           print("xdg-open command not found. Please open calendar.ics manually.")
+        
+    except HttpError as error:
+        print(f"An error occurred while accessing Google Calendar: {error}")
 
 if __name__ == '__main__':
     main()
