@@ -16,7 +16,15 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.errors import HttpError
 
 # Define the scope for Google Calendar API access (read-only)
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly']
+SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
+class Parameters:
+    """Class to hold parameters for synchronization."""
+    calendarId: str = "primary"  # Default to the primary calendar
+    timeMin: str = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()  # Current time in UTC
+    orderBy: str = "startTime"  # Order events by start time
+    
+    
 
 def main():
     """Main function to authenticate and sync calendar events."""
@@ -50,13 +58,18 @@ def main():
         now = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
         
         print('Getting all events from the calendar')
+        print('What calendar do you want to sync?')
+        Parameters.calendarId = input('Calendar ID (or press Enter for primary): ') or "primary"
+        Parameters.timeMin = input('Start time (ISO format, or press Enter for now): ') or datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        Parameters.orderBy = input('Order by (startTime or updated, or press Enter for startTime): ') or "startTime"
         
         # Fetch upcoming events from the primary calendar
         events_result = (
             service.events().list(
-                calendarId="primary",      # Use the user's primary calendar
-                singleEvents=True,         # Expand recurring events into individual instances
-                orderBy="startTime"        # Sort events by start time
+                calendarId=Parameters.calendarId,      # Use the user's primary calendar
+                singleEvents=True,                     # Expand recurring events into individual instances
+                timeMin=Parameters.timeMin,            # Fetch events starting from now
+                orderBy=Parameters.orderBy             # Sort events by start time
             ).execute()
         )
         
