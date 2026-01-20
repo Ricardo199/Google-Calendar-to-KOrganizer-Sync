@@ -38,6 +38,19 @@ def main():
             ).execute()
         )
         events = events_result.get("items", [])
+        cal = Calendar()
+        for event in events:
+            cal_event = Event()
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            end = event['end'].get('dateTime', event['end'].get('date'))
+            cal_event.add('summary', event.get('summary', 'No Title'))
+            cal_event.add('dtstart', datetime.datetime.fromisoformat(start).astimezone(zoneinfo.ZoneInfo("UTC")))
+            cal_event.add('dtend', datetime.datetime.fromisoformat(end).astimezone(zoneinfo.ZoneInfo("UTC")))
+            cal_event.add('description', event.get('description', ''))
+            cal_event.add('location', event.get('location', ''))
+            cal.add_component(cal_event)
+        with open('calendar.ics', 'wb') as f:
+            f.write(cal.to_ical())
     except HttpError as error:
         print(f"An error occurred: {error}")
 
