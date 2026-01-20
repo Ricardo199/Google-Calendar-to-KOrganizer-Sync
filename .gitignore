@@ -5,6 +5,13 @@ token.json
 # Generated iCal files
 *.ics
 
+# Tests
+test_*.py
+*_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
 # Python
 __pycache__/
 *.py[cod]
