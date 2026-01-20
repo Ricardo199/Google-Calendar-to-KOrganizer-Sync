@@ -55,7 +55,6 @@ def main():
         events_result = (
             service.events().list(
                 calendarId="primary",      # Use the user's primary calendar
-                timeMin=now,               # Only get events from now onwards
                 singleEvents=True,         # Expand recurring events into individual instances
                 orderBy="startTime"        # Sort events by start time
             ).execute()
