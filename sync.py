@@ -106,7 +106,9 @@ def main():
         
         # Open the iCal file with the default application
         try:
-            os.system('xdg-open calendar.ics')
+            exit_code = os.system(f'xdg-open calendar.ics >/dev/null 2>&1 &')
+            if exit_code != 0:
+                print("Could not open calendar.ics automatically. Please open it manually.")
         except Exception as e:
             print(f"Could not open calendar.ics automatically: {e}")
         
